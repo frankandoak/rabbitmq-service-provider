@@ -2,40 +2,33 @@
 
 namespace fiunchinho\Silex\Provider;
 
-use Silex\Application;
-use Silex\ServiceProviderInterface;
-use Symfony\Component\Routing\Generator\UrlGenerator;
+use Pimple\Container;
 use OldSound\RabbitMqBundle\RabbitMq\Producer;
 use OldSound\RabbitMqBundle\RabbitMq\Consumer;
 use OldSound\RabbitMqBundle\RabbitMq\AnonConsumer;
 use OldSound\RabbitMqBundle\RabbitMq\MultipleConsumer;
 use OldSound\RabbitMqBundle\RabbitMq\RpcClient;
 use OldSound\RabbitMqBundle\RabbitMq\RpcServer;
-use PhpAmqpLib\Connection\AMQPConnection;
 use PhpAmqpLib\Connection\AMQPLazyConnection;
 
-class RabbitServiceProvider implements ServiceProviderInterface
+class RabbitServiceProvider implements \Pimple\ServiceProviderInterface
 {
     const DEFAULT_CONNECTION = 'default';
 
-    public function register(Application $app)
+    public function register(Container $pimple)
     {
-        $this->loadConnections($app);
-        $this->loadProducers($app);
-        $this->loadConsumers($app);
-        $this->loadAnonymousConsumers($app);
-        $this->loadMultipleConsumers($app);
-        $this->loadRpcClients($app);
-        $this->loadRpcServers($app);
-    }
-
-    public function boot(Application $app)
-    {
+        $this->loadConnections($pimple);
+        $this->loadProducers($pimple);
+        $this->loadConsumers($pimple);
+        $this->loadAnonymousConsumers($pimple);
+        $this->loadMultipleConsumers($pimple);
+        $this->loadRpcClients($pimple);
+        $this->loadRpcServers($pimple);
     }
 
     /**
      * Return the name of the connection to use.
-     * 
+     *
      * @param  array     $options     Options for the Producer or Consumer.
      * @param  array     $connections Connections defined in the config file.
      * @return string                 The connection name that will be used
@@ -53,7 +46,7 @@ class RabbitServiceProvider implements ServiceProviderInterface
 
     private function loadConnections($app)
     {
-        $app['rabbit.connection'] = $app->share(function ($app) {
+        $app['rabbit.connection'] = function ($app) {
             if (!isset($app['rabbit.connections'])) {
                 throw new \InvalidArgumentException('You need to specify at least a connection in your configuration.');
             }
@@ -72,12 +65,12 @@ class RabbitServiceProvider implements ServiceProviderInterface
             }
 
             return $connections;
-        });
+        };
     }
 
     private function loadProducers($app)
     {
-        $app['rabbit.producer'] = $app->share(function ($app) {
+        $app['rabbit.producer'] = function ($app) {
             if (!isset($app['rabbit.producers'])) {
                 return;
             }
@@ -103,12 +96,13 @@ class RabbitServiceProvider implements ServiceProviderInterface
             }
 
             return $producers;
-        });
+        };
     }
 
+    // @see OldSound\RabbitMqBundle\DependencyInjection\OldSoundRabbitMqExtension::loadConsumers
     private function loadConsumers($app)
     {
-        $app['rabbit.consumer'] = $app->share(function ($app) {
+        $app['rabbit.consumer'] = function ($app) {
             if (!isset($app['rabbit.consumers'])) {
                 return;
             }
@@ -129,8 +123,15 @@ class RabbitServiceProvider implements ServiceProviderInterface
                     );
                 }
 
-                if (array_key_exists('qos_options', $options)) {
+                if (isset($options['idle_timeout'])) {
                     $consumer->setIdleTimeout($options['idle_timeout']);
+                }
+                if (isset($options['idle_timeout_exit_code'])) {
+                    $consumer->setIdleTimeoutExitCode($options['idle_timeout_exit_code']);
+                }
+                if (isset($options['graceful_max_execution'])) {
+                    $consumer->setGracefulMaxExecutionDateTimeFromSecondsInTheFuture($options['graceful_max_execution']['timeout']);
+                    $consumer->setGracefulMaxExecutionTimeoutExitCode($options['graceful_max_execution']['exit_code']);
                 }
 
                 if ((array_key_exists('auto_setup_fabric', $options)) && (!$options['auto_setup_fabric'])) {
@@ -141,12 +142,12 @@ class RabbitServiceProvider implements ServiceProviderInterface
             }
 
             return $consumers;
-        });
+        };
     }
 
     private function loadAnonymousConsumers($app)
     {
-        $app['rabbit.anonymous_consumer'] = $app->share(function ($app) {
+        $app['rabbit.anonymous_consumer'] = function ($app) {
             if (!isset($app['rabbit.anon_consumers'])) {
                 return;
             }
@@ -162,12 +163,12 @@ class RabbitServiceProvider implements ServiceProviderInterface
             }
 
             return $consumers;
-        });
+        };
     }
 
     private function loadMultipleConsumers($app)
     {
-        $app['rabbit.multiple_consumer'] = $app->share(function ($app) {
+        $app['rabbit.multiple_consumer'] = function ($app) {
             if (!isset($app['rabbit.multiple_consumers'])) {
                 return;
             }
@@ -199,13 +200,12 @@ class RabbitServiceProvider implements ServiceProviderInterface
             }
 
             return $consumers;
-        });
-        
+        };
     }
 
     private function loadRpcClients($app)
     {
-        $app['rabbit.rpc_client'] = $app->share(function ($app) {
+        $app['rabbit.rpc_client'] = function ($app) {
             if (!isset($app['rabbit.rpc_clients'])) {
                 return;
             }
@@ -223,12 +223,12 @@ class RabbitServiceProvider implements ServiceProviderInterface
             }
 
             return $clients;
-        });
+        };
     }
 
     private function loadRpcServers($app)
     {
-        $app['rabbit.rpc_server'] = $app->share(function ($app) {
+        $app['rabbit.rpc_server'] = function ($app) {
             if (!isset($app['rabbit.rpc_servers'])) {
                 return;
             }
@@ -252,7 +252,6 @@ class RabbitServiceProvider implements ServiceProviderInterface
             }
 
             return $servers;
-        });
-        
+        };
     }
 }
