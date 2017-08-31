@@ -1,8 +1,10 @@
-# RabbitMq Service Provider for Silex #
+# RabbitMq Service Provider for Silex 2.x#
+
+**NOTE** If you need support for Silex 1.x, consider using master branch instead.
 
 ## About ##
 
-This Silex service provider incorporates the awesome [RabbitMqBundle](http://github.com/videlalvaro/RabbitMqBundle) into your Silex Application. Installing this bundle created by [Alvaro Videla](https://twitter.com/old_sound) you can use [RabbitMQ](http://www.rabbitmq.com/) messaging features in your application, using the [php-amqplib](http://github.com/videlalvaro/php-amqplib) library.
+This Silex service provider incorporates the awesome [RabbitMqBundle](https://github.com/php-amqplib/RabbitMqBundle) into your Silex Application. Installing this bundle you can use [RabbitMQ](http://www.rabbitmq.com/) messaging features in your application, using the [php-amqplib](http://github.com/php-amqplib/php-amqplib) library.
 
 After installing this service provider, sending messages from a controller would be something like
 
@@ -23,14 +25,14 @@ Later when you want to consume 50 messages out of the queue names 'my_queue', yo
 $ ./app/console rabbitmq:consumer -m 50 my_queue
 ```
 
-To learn what you can do with the bundle, please read the bundle's [README](https://github.com/videlalvaro/RabbitMqBundle/blob/master/README.md).
+To learn what you can do with the bundle, please read the bundle's [README](https://github.com/php-amqplib/RabbitMqBundle/blob/master/README.md).
 
 ## Installation ##
 
 Require the library with Composer:
 
 ```
-$ composer require fiunchinho/rabbitmq-service-provider
+$ composer require fiunchinho/rabbitmq-service-provider@2.x-dev
 ```
 
 Then, to activate the service, register the service provider after creating your Silex Application:
@@ -48,7 +50,7 @@ Start sending messages ;)
 
 ## Usage ##
 
-In the [README](https://github.com/videlalvaro/RabbitMqBundle/blob/master/README.md) file from the Symfony bundle you can see all the available options. For example, to configure our service with two different connections and a couple of producers, and one consumer, we will pass the following configuration:
+In the [README](https://github.com/php-amqplib/RabbitMqBundle/blob/master/README.md) file from the Symfony bundle you can see all the available options. For example, to configure our service with two different connections and a couple of producers, and one consumer, we will pass the following configuration:
 
 ```php
 $app->register(new RabbitServiceProvider(), [
@@ -103,7 +105,7 @@ require_once 'vendor/autoload.php';
 use Silex\Application;
 use fiunchinho\Silex\Provider\RabbitServiceProvider;
 use fiunchinho\Silex\Command\Consumer;
-use Knp\Provider\ConsoleServiceProvider;
+use Symfony\Component\Console\Application as ConsoleApplication;
 
 $app = new Application();
 require __DIR__.'/config/dev.php';
@@ -117,21 +119,18 @@ $app->register(new RabbitServiceProvider(), array(
         ]
     ]
 ));
-$app->register(new ConsoleServiceProvider(), array(
-    'console.name'              => 'MyApplication',
-    'console.version'           => '1.0.0',
-    'console.project_directory' => __DIR__
-));
 
+$application = new ConsoleApplication();
 
-$application = $app['console'];
-$application->add(new Consumer());
+$consumerCommand = new \fiunchinho\Silex\Command\Consumer('rabbitmq:consumer');
+$consumerCommand->setContainer(new \fiunchinho\Silex\PimpleInteropWrapper($app));
+
+$application->add($consumerCommand);
 $application->run();
 ```
 
-We rely on the [Knp\Provider\ConsoleServiceProvider](https://github.com/KnpLabs/ConsoleServiceProvider) to make things easier, so you have to register it too. You can create new commands by inheriting from the example Consumer, and adding them as the example above.
-
+Unlike for Silex 1.~, we do not rely anymore on KnpConsoleProvider. We instead inject the Kernel thanks to the PimpleInteropWrapper class.
 
 ## Credits ##
 
-- [RabbitMqBundle](http://github.com/videlalvaro/RabbitMqBundle) bundle by [Alvaro Videla](https://twitter.com/old_sound)
+- [RabbitMqBundle](https://github.com/php-amqplib/RabbitMqBundle)
