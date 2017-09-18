@@ -138,6 +138,10 @@ class RabbitServiceProvider implements \Pimple\ServiceProviderInterface
                     $consumer->disableAutoSetupFabric();
                 }
 
+                if (isset($app['logger'])) {
+                    $consumer->setLogger($app['logger']);
+                }
+
                 $consumers[$name] = $consumer;
             }
 
