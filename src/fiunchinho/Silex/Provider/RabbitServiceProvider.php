@@ -92,6 +92,10 @@ class RabbitServiceProvider implements \Pimple\ServiceProviderInterface
                     $producer->disableAutoSetupFabric();
                 }
 
+                if (isset($options['content_type'])) {
+                    $producer->setContentType($options['content_type']);
+                }
+
                 $producers[$name] = $producer;
             }
 
